@@ -166,7 +166,7 @@ function escapeIdentifier(name) {
  */
 function escapePropertyName(name) {
   if (JS_KEYWORDS.includes(name) || !name.match(SAFE_IDENTIFER)) {
-    return toJsonStr(name);
+    return toLiteral(name);
   }
   return name;
 }
@@ -182,8 +182,22 @@ function escapeComment(comment) {
   return utils.wrapText(comment, 76);
 }
 
-function toJsonStr(val) {
-  return json5.stringify(val, null, 2);
+/**
+ * Convert values to a JavaScript literal
+ * @param {*} val
+ */
+function toLiteral(val) {
+  return json5.stringify(
+    val,
+    (key, value) => {
+      // Restore the original value from `x-$original-value`
+      if (value != null && value['x-$ref']) {
+        return json5.parse(value['x-$original-value']);
+      }
+      return value;
+    },
+    2,
+  );
 }
 
 module.exports = {
@@ -196,6 +210,6 @@ module.exports = {
   escapeIdentifier,
   escapePropertyName,
   escapeComment,
-  toJsonStr,
+  toLiteral,
   validateUrlOrFile,
 };

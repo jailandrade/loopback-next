@@ -11,6 +11,7 @@ const {debugJson} = require('./utils');
 const _ = require('lodash');
 const {generateControllerSpecs} = require('./spec-helper');
 const {generateModelSpecs, registerNamedSchemas} = require('./schema-helper');
+const json5 = require('json5');
 
 /**
  * Load swagger specs from the given url or file path; handle yml or json
@@ -30,7 +31,7 @@ async function loadSpec(specUrlStr, {log, validate} = {}) {
     debugJson('OpenAPI spec loaded: ', spec);
   }
 
-  spec = _.cloneDeepWith(spec, o => {
+  spec = _.cloneDeepWith(spec, item => {
     /**
      * A yaml object below produces `null` for `servers.url`
      * ```yaml
@@ -39,8 +40,11 @@ async function loadSpec(specUrlStr, {log, validate} = {}) {
      *   description: null url for testing
      * ```
      */
-    if (o != null && o.$ref) {
-      o['x-$ref'] = o.$ref;
+    if (item != null && item.$ref) {
+      // Store the original item in `x-$original`
+      item['x-$original-value'] = json5.stringify(item, null, 2);
+      // Keep `$ref` as `x-$ref` as `$ref` will be removed during dereferencing
+      item['x-$ref'] = item.$ref;
     }
   });
 
